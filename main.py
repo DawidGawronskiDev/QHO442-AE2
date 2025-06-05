@@ -1,11 +1,11 @@
 from db import Database
 
-class Main:
+class Controller:
     def __init__(self, db_path):
         self.db = Database(db_path)
 
 if __name__ == "__main__":
-    main = Main("./db/parana.db")
+    controller = Controller("./db/parana.db")
+    res = controller.db.fetch("SELECT * FROM sellers;")
 
-    res = main.db.fetch("SELECT * FROM sellers;")
     print(res)
