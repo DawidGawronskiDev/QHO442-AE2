@@ -7,6 +7,6 @@ class Controller:
 if __name__ == "__main__":
     controller = Controller("./db/parana.db")
 
-    res = controller.db.populate("./db/scripts/seller_reviews.txt")
-    res = controller.db.fetch("SELECT * FROM seller_reviews;")
+    controller.db.populate("./db/scripts/product_reviews.txt")
+    res = controller.db.fetch("SELECT * FROM product_reviews;")
     print(res)
