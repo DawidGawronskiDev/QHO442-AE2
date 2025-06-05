@@ -23,4 +23,9 @@ class TUI:
 
     @staticmethod
     def print_error(s):
-        print(Color.error(s))
+        print(Color.error(s), end="")
+
+    @staticmethod
+    def print_list(l):
+        for i in l:
+            print(f'- {i}')
