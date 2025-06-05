@@ -1,0 +1,31 @@
+import sqlite3
+
+class Database:
+    def __init__(self, db_path):
+        self.con = sqlite3.connect(db_path)
+
+    def exe(self, query):
+        with self.con:
+            cur = self.con.cursor()
+            cur.execute(query)
+            cur.close()
+
+    def fetch(self, query):
+        cur = self.con.cursor()
+        cur.execute(query)
+        rows = cur.fetchall()
+        cur.close()
+        return rows
+
+    def populate(self, script_path):
+        with open(script_path, 'r') as file:
+            script = file.read()
+            statements = script.split(";")
+            for statement in statements:
+                if (statement):
+                    statement.strip()
+                    self.exe(statement + ";")
+
+
+    def close(self):
+        self.con.close()
