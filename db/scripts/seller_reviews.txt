@@ -1,0 +1,31 @@
+DROP TABLE IF EXISTS seller_reviews;
+
+CREATE TABLE seller_reviews (
+    review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_id INTEGER NOT NULL,
+    shopper_id INTEGER NOT NULL,
+    star_rating INTEGER NOT NULL,
+    review_comment TEXT,
+    review_date TEXT DEFAULT (datetime('now')),
+    CONSTRAINT seller_reviews_sellers_fk
+        FOREIGN KEY (seller_id) REFERENCES sellers(seller_id),
+    CONSTRAINT seller_reviews_shoppers_fk
+        FOREIGN KEY (shopper_id) REFERENCES shoppers(shopper_id),
+    CONSTRAINT seller_reviews_star_rating_check
+        CHECK (star_rating IN (1, 2, 3, 4, 5))
+);
+
+INSERT INTO seller_reviews
+VALUES (1, 200000, 10000, 5, "Amazing!", datetime('now'));
+
+INSERT INTO seller_reviews
+VALUES (2, 200001, 10001, 4, "Amazing!", datetime('now'));
+
+INSERT INTO seller_reviews
+VALUES (3, 200002, 10002, 3, "Good!", datetime('now'));
+
+INSERT INTO seller_reviews
+VALUES (4, 200003, 10003, 2, "Meh...", datetime('now'));
+
+INSERT INTO seller_reviews
+VALUES (5, 200004, 10004, 1, "Bad.", datetime('now'));
