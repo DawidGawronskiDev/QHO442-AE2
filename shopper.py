@@ -1,5 +1,5 @@
-from basket import Basket
 from db import Database
+from basket import Basket
 
 class Shopper:
     def __init__(self, shopper_id, shopper_account_ref, shopper_first_name, shopper_surname,
@@ -15,22 +15,44 @@ class Shopper:
         self.basket = None
 
     def init_basket(self, db: Database):
-        self.basket = Basket()
-        query = """
-            SELECT bc.product_id, bc.seller_id, bc.quantity, bc.price
-            FROM basket_contents bc
-            INNER JOIN shopper_baskets sb ON bc.basket_id = sb.basket_id
-            WHERE sb.shopper_id = ?;
-        """
-        items = db.fetch_many(query, (self.shopper_id,))
-        for item in items:
-            self.basket.add_item({
-                "product_id": item[0],
-                "seller_id": item[1],
-                "quantity": item[2],
-                "price": item[3]
-            })
-
+        self.basket = Basket.initialize(db, self.shopper_id)
 
     def welcome(self):
         return f"Welcome {self.shopper_first_name} {self.shopper_surname}!"
+
+    def display_your_order_history(self, db: Database):
+        query = """
+            SELECT
+                so.order_id,
+                so.order_date,
+                p.product_description,
+                s.seller_name,
+                op.price,
+                op.quantity,
+                op.ordered_product_status
+            FROM shopper_orders so
+            JOIN ordered_products op
+                ON op.order_id = so.order_id
+            JOIN products p
+                ON p.product_id = op.product_id
+            JOIN sellers s
+                ON s.seller_id = op.seller_id
+            WHERE shopper_id = ?
+            ORDER BY so.order_date ASC;
+        """
+        rows = db.fetch_many(query, (self.shopper_id,))
+
+        if not len(rows):
+            TUI.print_error("No orders placed by this customer")
+            return
+
+        # This code needs refactoring
+        lens = (12, 16, 48, 24, 8, 8, 12)
+        header = ("Order ID", "Order Date", "Product Description", "Seller", "Price", "Qty", "Status")
+        for i, val in enumerate(header):
+            print(str(val).strip()[:lens[i]].ljust(lens[i], " "), end="")
+        print("\n")
+        for row in rows:
+            for i, val in enumerate(row):
+                print(str(val).strip()[:lens[i]].ljust(lens[i], " "), end="")
+            print("\n")
