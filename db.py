@@ -10,9 +10,16 @@ class Database:
             cur.execute(query)
             cur.close()
 
-    def fetch(self, query):
+    def fetch_one(self, query):
         cur = self.con.cursor()
         cur.execute(query)
+        row = cur.fetchone()
+        cur.close()
+        return row
+
+    def fetch_many(self, query, args=()):
+        cur = self.con.cursor()
+        cur.execute(query, args)
         rows = cur.fetchall()
         cur.close()
         return rows
