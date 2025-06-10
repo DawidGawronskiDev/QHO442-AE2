@@ -10,9 +10,9 @@ class Database:
             cur.execute(query)
             cur.close()
 
-    def fetch_one(self, query):
+    def fetch_one(self, query, args=()):
         cur = self.con.cursor()
-        cur.execute(query)
+        cur.execute(query, args)
         row = cur.fetchone()
         cur.close()
         return row
