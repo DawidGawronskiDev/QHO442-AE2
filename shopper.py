@@ -1,5 +1,6 @@
 from db import Database
 from basket import Basket
+from tui import TUI
 
 class Shopper:
     def __init__(self, shopper_id, shopper_account_ref, shopper_first_name, shopper_surname,
@@ -38,7 +39,7 @@ class Shopper:
             JOIN sellers s
                 ON s.seller_id = op.seller_id
             WHERE shopper_id = ?
-            ORDER BY so.order_date ASC;
+            ORDER BY so.order_date DESC;
         """
         rows = db.fetch_many(query, (self.shopper_id,))
 
@@ -47,12 +48,8 @@ class Shopper:
             return
 
         # This code needs refactoring
-        lens = (12, 16, 48, 24, 8, 8, 12)
-        header = ("Order ID", "Order Date", "Product Description", "Seller", "Price", "Qty", "Status")
-        for i, val in enumerate(header):
-            print(str(val).strip()[:lens[i]].ljust(lens[i], " "), end="")
-        print("\n")
-        for row in rows:
-            for i, val in enumerate(row):
-                print(str(val).strip()[:lens[i]].ljust(lens[i], " "), end="")
-            print("\n")
+        TUI.print_table(
+            (12, 16, 48, 24, 8, 8, 12),
+            ("Order ID", "Order Date", "Product Description", "Seller", "Price", "Qty", "Status"),
+            rows
+        )
