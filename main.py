@@ -1,8 +1,6 @@
 from db import Database
 from tui import TUI
 from shopper import Shopper
-from product import Product
-from mockup import Mockup
 
 class Controller:
     def __init__(self, db_path):
@@ -50,18 +48,105 @@ class Controller:
         }
 
         while True:
-            TUI.print_list(list(options.values()))
-            choice = int(TUI.validate_input("Choose an option: "))
+            for option in options.items():
+                print(f"{option[0]}: {option[1]}")
+            choice = int(input("Choose an option: ").strip())
 
             if choice in options.keys():
                 actions[choice]()
-                break
 
     def sub_1(self):
         self.shopper.display_your_order_history(self.db)
 
     def sub_2(self):
-        Product.get_product_categories(self.db)
+        # i. Display a numbered list of product categories in alphabetical order
+        get_categories_query = "SELECT category_id, category_description FROM categories ORDER BY category_description ASC;"
+        categories = self.db.fetch_many(get_categories_query)
+        if not categories:
+            TUI.print_error("No product categories available.\n")
+            return
+
+        for idx, category in enumerate(categories, start=1):
+            print(f"{idx}. {category[1]}")
+
+        # ii. Prompt the user to select a category
+        category_choice = int(input("Enter the number of the product category: ").strip())
+        if category_choice < 1 or category_choice > len(categories):
+            TUI.print_error("Invalid category selection.\n")
+            return
+        category_id = categories[category_choice - 1][0]
+
+        # iii. Display a numbered list of products in the selected category
+        get_products_query = "SELECT product_id, product_description FROM products WHERE category_id = ? ORDER BY product_description ASC;"
+        products = self.db.fetch_many(get_products_query, (category_id,))
+        if not products:
+            TUI.print_error("No products available in this category.\n")
+            return
+
+        for idx, product in enumerate(products, start=1):
+            print(f"{idx}. {product[1]}")
+
+        # iv. Prompt the user to select a product
+        product_choice = int(input("Enter the number of the product: ").strip())
+        if product_choice < 1 or product_choice > len(products):
+            TUI.print_error("Invalid product selection.\n")
+            return
+        product_id = products[product_choice - 1][0]
+
+        # v. Display a numbered list of sellers for the selected product
+        get_sellers_query = """
+            SELECT ps.seller_id, s.seller_name, ps.price
+            FROM product_sellers ps
+            JOIN sellers s ON ps.seller_id = s.seller_id
+            WHERE ps.product_id = ?
+            ORDER BY s.seller_name ASC;
+        """
+        sellers = self.db.fetch_many(get_sellers_query, (product_id,))
+        if not sellers:
+            TUI.print_error("No sellers available for this product.\n")
+            return
+
+        for idx, seller in enumerate(sellers, start=1):
+            print(f"{idx}. {seller[1]} - ${seller[2]:.2f}")
+
+        # vi. Prompt the user to select a seller
+        seller_choice = int(input("Enter the number of the seller: ").strip())
+        if seller_choice < 1 or seller_choice > len(sellers):
+            TUI.print_error("Invalid seller selection.\n")
+            return
+        seller_id = sellers[seller_choice - 1][0]
+        price = sellers[seller_choice - 1][2]
+
+        # vii. Prompt the user to enter the quantity
+        while True:
+            quantity = int(input("Enter the quantity: ").strip())
+            if quantity > 0:
+                break
+            TUI.print_error("The quantity must be greater than 0.\n")
+
+        # viii. Check if there is a current basket, if not, create one
+        get_basket_query = "SELECT basket_id FROM shopper_baskets WHERE shopper_id = ?;"
+        basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
+        if not basket:
+            create_basket_query = "INSERT INTO shopper_baskets (shopper_id, basket_created_date_time) VALUES (?, datetime('now'));"
+            self.db.exe(create_basket_query, (self.shopper.shopper_id,))
+            get_last_insert_id_query = "SELECT last_insert_rowid();"
+            basket_id = self.db.fetch_one(get_last_insert_id_query)[0]
+        else:
+            basket_id = basket[0]
+
+        # ix. Insert the product into the basket_contents table
+        add_to_basket_query = """
+            INSERT INTO basket_contents (basket_id, product_id, seller_id, quantity, price)
+            VALUES (?, ?, ?, ?, ?);
+        """
+        self.db.exe(add_to_basket_query, (basket_id, product_id, seller_id, quantity, price))
+
+        # x. Commit the transaction
+        self.db.commit()
+
+        # xi. Print confirmation
+        TUI.print_success("Item added to your basket.\n")
 
 
 if __name__ == "__main__":
