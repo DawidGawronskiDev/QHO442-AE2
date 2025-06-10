@@ -1,6 +1,7 @@
 from db import Database
 from tui import TUI
 from shopper import Shopper
+from product import Product
 from mockup import Mockup
 
 class Controller:
@@ -44,6 +45,7 @@ class Controller:
 
         actions = {
             1: self.sub_1,
+            2: self.sub_2
         }
 
         while True:
@@ -56,6 +58,9 @@ class Controller:
 
     def sub_1(self):
         self.shopper.display_your_order_history(self.db)
+
+    def sub_2(self):
+        Product.get_product_categories(self.db)
 
 
 if __name__ == "__main__":

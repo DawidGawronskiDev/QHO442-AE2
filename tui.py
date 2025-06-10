@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from color import Color
 
 class TUI:
@@ -29,3 +31,15 @@ class TUI:
     def print_list(l):
         for i in l:
             print(f'- {i}')
+
+    @staticmethod
+    def print_table(lens: Tuple[int], header: Tuple[str], rows: Tuple[str, int]):
+        lens = (12, 16, 48, 24, 8, 8, 12)
+        header = ("Order ID", "Order Date", "Product Description", "Seller", "Price", "Qty", "Status")
+        for i, val in enumerate(header):
+            print(str(val).strip()[:lens[i]].ljust(lens[i], " "), end="")
+        print("\n")
+        for row in rows:
+            for i, val in enumerate(row):
+                print(str(val).strip()[:lens[i]].ljust(lens[i], " "), end="")
+            print("\n")

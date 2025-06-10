@@ -44,6 +44,7 @@ class Mockup:
 
         if not len(rows):
             TUI.print_error("No orders placed by this customer")
+            return
 
         lens = (12, 16, 48, 24, 8, 8, 12)
         header = ("Order ID", "Order Date", "Product Description", "Seller", "Price", "Qty", "Status")
