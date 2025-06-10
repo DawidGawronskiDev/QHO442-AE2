@@ -45,7 +45,8 @@ class Controller:
 
         actions = {
             1: self.sub_1,
-            2: self.sub_2
+            2: self.sub_2,
+            7: exit
         }
 
         while True:
