@@ -65,16 +65,7 @@ class Controller:
         if not categories:
             TUI.print_error("No product categories available.\n")
             return
-
-        for idx, category in enumerate(categories, start=1):
-            print(f"{idx}. {category[1]}")
-
-        # ii. Prompt the user to select a category
-        category_choice = int(input("Enter the number of the product category: ").strip())
-        if category_choice < 1 or category_choice > len(categories):
-            TUI.print_error("Invalid category selection.\n")
-            return
-        category_id = categories[category_choice - 1][0]
+        category_id = TUI.display_options(categories, "Product Categories", "category")
 
         # iii. Display a numbered list of products in the selected category
         get_products_query = "SELECT product_id, product_description FROM products WHERE category_id = ? ORDER BY product_description ASC;"
@@ -82,16 +73,7 @@ class Controller:
         if not products:
             TUI.print_error("No products available in this category.\n")
             return
-
-        for idx, product in enumerate(products, start=1):
-            print(f"{idx}. {product[1]}")
-
-        # iv. Prompt the user to select a product
-        product_choice = int(input("Enter the number of the product: ").strip())
-        if product_choice < 1 or product_choice > len(products):
-            TUI.print_error("Invalid product selection.\n")
-            return
-        product_id = products[product_choice - 1][0]
+        product_id = TUI.display_options(products, "Products", "product")
 
         # v. Display a numbered list of sellers for the selected product
         get_sellers_query = """
@@ -105,17 +87,12 @@ class Controller:
         if not sellers:
             TUI.print_error("No sellers available for this product.\n")
             return
-
-        for idx, seller in enumerate(sellers, start=1):
-            print(f"{idx}. {seller[1]} - ${seller[2]:.2f}")
-
-        # vi. Prompt the user to select a seller
-        seller_choice = int(input("Enter the number of the seller: ").strip())
-        if seller_choice < 1 or seller_choice > len(sellers):
-            TUI.print_error("Invalid seller selection.\n")
-            return
-        seller_id = sellers[seller_choice - 1][0]
-        price = sellers[seller_choice - 1][2]
+        seller_id = TUI.display_options(
+            [(seller[0], f"{seller[1]} - ${seller[2]:.2f}") for seller in sellers],
+            "Sellers",
+            "seller"
+        )
+        price = next(seller[2] for seller in sellers if seller[0] == seller_id)
 
         # vii. Prompt the user to enter the quantity
         while True:
