@@ -1,30 +1,34 @@
 from db import Database
 from tui import TUI
+from shopper import Shopper
 
 class Controller:
     def __init__(self, db_path):
         self.db = Database(db_path)
-        self.shopper = []
+        self.shopper = None
+
+        self.run()
+
+    def run(self):
+        shopper_id = input("Enter Shopper ID: ").strip()
+        if not shopper_id.isdigit():
+            TUI.print_error("Invalid Shopper ID. Please enter a numeric value.\n")
+            return
+
+        shopper_id = int(shopper_id)
+
+        query = f"SELECT * FROM shoppers WHERE shopper_id = {shopper_id}"
+        row = self.db.fetch_one(query)
+        if row is None:
+            TUI.print_error("Shopper not found.\n")
+            return
+
+        self.shopper = Shopper(*row)
+        self.shopper.init_basket(self.db)
+        TUI.print_success(self.shopper.welcome())
+
         while True:
-            self.start()
-
-    def start(self):
-        self.main()
-
-    def main(self):
-        shoppers = self.db.fetch("SELECT * FROM shoppers;")
-
-        id = input("Please provide a shopper id: ")
-        found = list(filter(lambda i: str(i[0]) == id, shoppers))
-
-        if len(found) == 0:
-            TUI.print_error("No shopper found.")
-            exit()
-
-        self.shopper = found[0]
-        TUI.print_success(f"Shopper found! You are now inspecting {self.shopper[2]} {self.shopper[3]}.")
-
-        self.sub()
+            self.sub()
 
     def sub(self):
         options = {
@@ -37,15 +41,8 @@ class Controller:
             7: "Exit"
         }
 
-        while True:
-            for option in options.items():
-                print(f'{option[0]}. {option[1]}')
-            selected = int(TUI.validate_input("Please select an option: "))
-            if (selected in list(options.keys())):
-                print(options(selected))
-                break
-            else:
-                TUI.print_error("Wrong option. ")
+        TUI.print_list(list(options.values()))
+        choice = TUI.validate_input("Choose an option: ")
 
 
 if __name__ == "__main__":
