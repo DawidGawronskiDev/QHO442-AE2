@@ -42,13 +42,20 @@ class Controller:
             7: "Exit"
         }
 
+        actions = {
+            1: self.sub_1,
+        }
+
         while True:
             TUI.print_list(list(options.values()))
             choice = int(TUI.validate_input("Choose an option: "))
 
-            if choice == 1:
-                self.shopper.display_your_order_history(self.db)
+            if choice in options.keys():
+                actions[choice]()
                 break
+
+    def sub_1(self):
+        self.shopper.display_your_order_history(self.db)
 
 
 if __name__ == "__main__":
