@@ -4,10 +4,10 @@ class Database:
     def __init__(self, db_path):
         self.con = sqlite3.connect(db_path)
 
-    def exe(self, query):
+    def exe(self, query, args=()):
         with self.con:
             cur = self.con.cursor()
-            cur.execute(query)
+            cur.execute(query, args)
             cur.close()
 
     def fetch_one(self, query, args=()):
@@ -23,6 +23,9 @@ class Database:
         rows = cur.fetchall()
         cur.close()
         return rows
+
+    def commit(self):
+        self.con.commit()
 
     def populate(self, script_path):
         with open(script_path, 'r') as file:
