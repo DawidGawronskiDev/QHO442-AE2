@@ -1,13 +1,15 @@
 from db import Database
 from tui import TUI
 from shopper import Shopper
+from mockup import Mockup
 
 class Controller:
     def __init__(self, db_path):
         self.db = Database(db_path)
         self.shopper = None
 
-        self.run()
+        while True:
+            self.run()
 
     def run(self):
         shopper_id = input("Enter Shopper ID: ").strip()
@@ -27,8 +29,7 @@ class Controller:
         self.shopper.init_basket(self.db)
         TUI.print_success(self.shopper.welcome())
 
-        while True:
-            self.sub()
+        self.sub()
 
     def sub(self):
         options = {
@@ -41,8 +42,13 @@ class Controller:
             7: "Exit"
         }
 
-        TUI.print_list(list(options.values()))
-        choice = TUI.validate_input("Choose an option: ")
+        while True:
+            TUI.print_list(list(options.values()))
+            choice = int(TUI.validate_input("Choose an option: "))
+
+            if choice == 1:
+                self.shopper.display_your_order_history(self.db)
+                break
 
 
 if __name__ == "__main__":
