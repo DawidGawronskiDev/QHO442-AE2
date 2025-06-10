@@ -50,7 +50,11 @@ class TUI:
             print(f'- {i}')
 
     @staticmethod
-    def print_table(lens, header, rows: Tuple[str, int]):
+    def print_header(s):
+        print(f'\n{s}\n{"-" * len(s)}\n')
+
+    @staticmethod
+    def print_table(lens, header, rows):
         for i, val in enumerate(header):
             print(str(val).strip()[:lens[i]].ljust(lens[i], " "), end="")
         print("\n")
