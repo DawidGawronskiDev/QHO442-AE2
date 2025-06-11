@@ -1,6 +1,7 @@
 from db import Database
 from tui import TUI
 from shopper import Shopper
+from basket import Basket
 from table import Table
 from queries import *
 
@@ -8,6 +9,7 @@ class Controller:
     def __init__(self, db_path):
         self.db = Database(db_path)
         self.shopper = None
+        self.basket = None
 
         while True:
             self.run()
@@ -28,6 +30,7 @@ class Controller:
 
         self.shopper = Shopper(*row)
         self.shopper.init_basket(self.db)
+        self.basket = Basket(self.shopper.shopper_id, self.db)
         TUI.print_success(self.shopper.welcome())
 
         self.sub()
@@ -65,104 +68,39 @@ class Controller:
         self.shopper.display_your_order_history(self.db)
 
     def sub_2(self):
-        # i. Display a numbered list of product categories in alphabetical order
-        get_categories_query = GET_CATEGORIES_QUERY
-        categories = self.db.fetch_many(get_categories_query)
-        if not categories:
-            TUI.print_error("No product categories available.\n")
+        category_id = self.select_category()
+        if not category_id:
             return
-        category_id = TUI.display_options(categories, "Product Categories", "category")
 
-        # iii. Display a numbered list of products in the selected category
-        get_products_query = GET_PRODUCTS_QUERY
-        products = self.db.fetch_many(get_products_query, (category_id,))
-        if not products:
-            TUI.print_error("No products available in this category.\n")
+        product_id = self.select_product(category_id)
+        if not product_id:
             return
-        product_id = TUI.display_options(products, "Products", "product")
 
-        # v. Display a numbered list of sellers for the selected product
-        get_sellers_query = GET_SELLERS_QUERY
-        sellers = self.db.fetch_many(get_sellers_query, (product_id,))
-        if not sellers:
-            TUI.print_error("No sellers available for this product.\n")
+        seller_id, price = self.select_seller(product_id)
+        if not seller_id:
             return
-        seller_id = TUI.display_options(
-            [(seller[0], f"{seller[1]} - ${seller[2]:.2f}") for seller in sellers],
-            "Sellers",
-            "seller"
-        )
-        price = next(seller[2] for seller in sellers if seller[0] == seller_id)
 
-        # vii. Prompt the user to enter the quantity
-        while True:
-            quantity = int(input("Enter the quantity: ").strip())
-            if quantity > 0:
-                break
-            TUI.print_error("The quantity must be greater than 0.\n")
+        quantity = self.get_quantity()
+        if not quantity:
+            return
 
-        # viii. Check if there is a current basket, if not, create one
-        get_basket_query = GET_BASKET_QUERY
-        basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
-        if not basket:
-            create_basket_query = CREATE_BASKET_QUERY
-            self.db.exe(create_basket_query, (self.shopper.shopper_id,))
-            get_last_insert_id_query = "SELECT last_insert_rowid();"
-            basket_id = self.db.fetch_one(get_last_insert_id_query)[0]
-        else:
-            basket_id = basket[0]
+        basket_id = self.get_or_create_basket()
+        self.add_item_to_basket(basket_id, product_id, seller_id, quantity, price)
 
-        # ix. Insert the product into the basket_contents table
-        add_to_basket_query = ADD_TO_BASKET_QUERY
-        self.db.exe(add_to_basket_query, (basket_id, product_id, seller_id, quantity, price))
-
-        # x. Commit the transaction
-        self.db.commit()
-
-        # xi. Print confirmation
         TUI.print_success("Item added to your basket.\n")
 
     def sub_3(self):
-        # i. Check if there is a current basket
-        get_basket_query = GET_BASKET_QUERY
-        basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
+        basket = Basket.get_basket(self.db, self.shopper.shopper_id)
         if not basket:
             TUI.print_error("Your basket is empty.\n")
             return
 
-        basket_id = basket[0]
-
-        # ii. Fetch basket contents
-        get_basket_contents_query = GET_BASKET_CONTENTS_QUERY
-        basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
+        basket_contents = Basket.get_basket_contents(self.db, basket[0])
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
             return
 
-        # iii. Prepare data for display
-        rows = []
-        total_cost = 0
-        for idx, item in enumerate(basket_contents, start=1):
-            product_id, product_description, seller_name, quantity, price = item
-            item_total = quantity * price
-            total_cost += item_total
-            rows.append((
-                idx,
-                product_description,
-                seller_name,
-                quantity,
-                f"£{price:.2f}",
-                f"£{item_total:.2f}"
-            ))
-
-        # iv. Display basket contents using TUI.print_table
-        TUI.print_header("Basket Contents")
-        Table((12, 64, 24, 8, 12, 12),
-              ("Item No.", "Description", "Seller", "Qty", "Price", "Total"),
-              rows).print_table()
-
-        # v. Display total basket cost
-        print(f"\nBasket Total: £{total_cost:.2f}\n")
+        Basket.display_basket_contents(basket_contents)
 
     def sub_4(self):
         # i.
@@ -414,6 +352,53 @@ class Controller:
         except Exception as e:
             self.db.rollback()
             TUI.print_error(f"An error occurred during checkout: {e}\n")
+
+    def select_category(self):
+        categories = self.db.fetch_many(GET_CATEGORIES_QUERY)
+        if not categories:
+            TUI.print_error("No product categories available.\n")
+            return None
+        return TUI.display_options(categories, "Product Categories", "category")
+
+    def select_product(self, category_id):
+        products = self.db.fetch_many(GET_PRODUCTS_QUERY, (category_id,))
+        if not products:
+            TUI.print_error("No products available in this category.\n")
+            return None
+        return TUI.display_options(products, "Products", "product")
+
+    def select_seller(self, product_id):
+        sellers = self.db.fetch_many(GET_SELLERS_QUERY, (product_id,))
+        if not sellers:
+            TUI.print_error("No sellers available for this product.\n")
+            return None, None
+        seller_id = TUI.display_options(
+            [(seller[0], f"{seller[1]} - ${seller[2]:.2f}") for seller in sellers],
+            "Sellers",
+            "seller"
+        )
+        price = next(seller[2] for seller in sellers if seller[0] == seller_id)
+        return seller_id, price
+
+    def get_quantity(self):
+        while True:
+            try:
+                quantity = int(input("Enter the quantity: ").strip())
+                if quantity > 0:
+                    return quantity
+                TUI.print_error("The quantity must be greater than 0.\n")
+            except ValueError:
+                TUI.print_error("Invalid input. Please enter a numeric value.\n")
+
+    def get_or_create_basket(self):
+        basket = self.db.fetch_one(GET_BASKET_QUERY, (self.shopper.shopper_id,))
+        if not basket:
+            return Basket.create_basket(self.db, self.shopper.shopper_id)
+        return basket[0]
+
+    def add_item_to_basket(self, basket_id, product_id, seller_id, quantity, price):
+        self.db.exe(ADD_TO_BASKET_QUERY, (basket_id, product_id, seller_id, quantity, price))
+        self.db.commit()
 
 
 if __name__ == "__main__":
