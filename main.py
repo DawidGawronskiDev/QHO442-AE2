@@ -45,6 +45,7 @@ class Controller:
             1: self.sub_1,
             2: self.sub_2,
             3: self.sub_3,
+            4: self.sub_4,
             7: exit
         }
 
@@ -175,6 +176,97 @@ class Controller:
 
         # v. Display total basket cost
         print(f"\nBasket Total: £{total_cost:.2f}\n")
+
+    def sub_4(self):
+        # i.
+        get_basket_query = "SELECT basket_id FROM shopper_baskets WHERE shopper_id = ?;"
+        basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
+        if not basket:
+            TUI.print_error("Your basket is empty.\n")
+            return
+
+        basket_id = basket[0]
+
+        # Fetch basket contents
+        get_basket_contents_query = """
+            SELECT bc.product_id, p.product_description, s.seller_name, bc.quantity, bc.price
+            FROM basket_contents bc
+            JOIN products p ON bc.product_id = p.product_id
+            JOIN sellers s ON bc.seller_id = s.seller_id
+            WHERE bc.basket_id = ?;
+        """
+        basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
+        if not basket_contents:
+            TUI.print_error("Your basket is empty.\n")
+            return
+
+        # Display current basket
+        rows = []
+        total_cost = 0
+        for idx, item in enumerate(basket_contents, start=1):
+            product_id, product_description, seller_name, quantity, price = item
+            item_total = quantity * price
+            total_cost += item_total
+            rows.append((
+                idx,
+                product_description,
+                seller_name,
+                quantity,
+                f"£{price:.2f}",
+                f"£{item_total:.2f}"
+            ))
+
+        TUI.print_header("Basket Contents")
+        TUI.print_table(
+            (12, 64, 24, 8, 12, 12),
+            ("Item No.", "Description", "Seller", "Qty", "Price", "Total"),
+            rows
+        )
+        print(f"\nBasket Total: £{total_cost:.2f}\n")
+
+        # ii.
+        if len(basket_contents) > 1:
+            while True:
+                try:
+                    item_no = int(input("Enter the basket item no. you want to update: ").strip())
+                    if 1 <= item_no <= len(basket_contents):
+                        break
+                    else:
+                        TUI.print_error("The basket item no. you have entered is invalid.\n")
+                except ValueError:
+                    TUI.print_error("The basket item no. you have entered is invalid.\n")
+        else:
+            item_no = 1
+
+        selected_item = basket_contents[item_no - 1]
+        product_id = selected_item[0]
+
+        # iii.
+        while True:
+            try:
+                new_quantity = int(input("Enter the new quantity of the selected product you want to buy: ").strip())
+                if new_quantity > 0:
+                    break
+                else:
+                    TUI.print_error("The quantity must be greater than zero.\n")
+            except ValueError:
+                TUI.print_error("The quantity must be greater than 0.\n")
+
+        # iv.
+        update_quantity_query = """
+            UPDATE basket_contents
+            SET quantity = ?
+            WHERE basket_id = ? AND product_id = ?;
+        """
+        self.db.exe(update_quantity_query, (new_quantity, basket_id, product_id))
+        self.db.commit()
+
+        # v.
+        TUI.print_success("Quantity updated successfully.\n")
+        self.sub_3()  # Reuse the basket display logic from Option 3
+
+        # vi.
+        return
 
 
 if __name__ == "__main__":
