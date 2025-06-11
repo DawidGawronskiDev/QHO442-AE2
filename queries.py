@@ -1,3 +1,8 @@
+# Shoppers
+GET_SHOPPERS_QUERY = """
+    SELECT * FROM shoppers WHERE shopper_id = ?;
+"""
+
 # Categories
 
 GET_CATEGORIES_QUERY = """
@@ -92,4 +97,8 @@ INSERT_ORDERED_PRODUCT_QUERY = """
 # Extras
 GET_LAST_INSERT_ID_QUERY = """
     SELECT last_insert_rowid();
+"""
+
+GET_SELLER_ID_FROM_BASKET_QUERY = """
+    SELECT seller_id FROM basket_contents WHERE basket_id = ? AND product_id = ?;
 """

@@ -22,8 +22,7 @@ class Controller:
 
         shopper_id = int(shopper_id)
 
-        query = f"SELECT * FROM shoppers WHERE shopper_id = {shopper_id}"
-        row = self.db.fetch_one(query)
+        row = self.db.fetch_one(GET_SHOPPERS_QUERY, (shopper_id,))
         if row is None:
             TUI.print_error("Shopper not found.\n")
             return
@@ -299,7 +298,7 @@ class Controller:
             for item in basket_contents:
                 product_id, _, _, quantity, price = item
                 seller_id = self.db.fetch_one(
-                    "SELECT seller_id FROM basket_contents WHERE basket_id = ? AND product_id = ?;",
+                    GET_SELLER_ID_FROM_BASKET_QUERY,
                     (basket_id, product_id)
                 )[0]
                 self.db.exe(INSERT_ORDERED_PRODUCT_QUERY, (order_id, product_id, seller_id, quantity, price))
