@@ -2,6 +2,7 @@ from db import Database
 from tui import TUI
 from shopper import Shopper
 from table import Table
+from queries import *
 
 class Controller:
     def __init__(self, db_path):
@@ -65,7 +66,7 @@ class Controller:
 
     def sub_2(self):
         # i. Display a numbered list of product categories in alphabetical order
-        get_categories_query = "SELECT category_id, category_description FROM categories ORDER BY category_description ASC;"
+        get_categories_query = GET_CATEGORIES_QUERY
         categories = self.db.fetch_many(get_categories_query)
         if not categories:
             TUI.print_error("No product categories available.\n")
@@ -73,7 +74,7 @@ class Controller:
         category_id = TUI.display_options(categories, "Product Categories", "category")
 
         # iii. Display a numbered list of products in the selected category
-        get_products_query = "SELECT product_id, product_description FROM products WHERE category_id = ? ORDER BY product_description ASC;"
+        get_products_query = GET_PRODUCTS_QUERY
         products = self.db.fetch_many(get_products_query, (category_id,))
         if not products:
             TUI.print_error("No products available in this category.\n")
@@ -81,13 +82,7 @@ class Controller:
         product_id = TUI.display_options(products, "Products", "product")
 
         # v. Display a numbered list of sellers for the selected product
-        get_sellers_query = """
-            SELECT ps.seller_id, s.seller_name, ps.price
-            FROM product_sellers ps
-            JOIN sellers s ON ps.seller_id = s.seller_id
-            WHERE ps.product_id = ?
-            ORDER BY s.seller_name ASC;
-        """
+        get_sellers_query = GET_SELLERS_QUERY
         sellers = self.db.fetch_many(get_sellers_query, (product_id,))
         if not sellers:
             TUI.print_error("No sellers available for this product.\n")
@@ -107,10 +102,10 @@ class Controller:
             TUI.print_error("The quantity must be greater than 0.\n")
 
         # viii. Check if there is a current basket, if not, create one
-        get_basket_query = "SELECT basket_id FROM shopper_baskets WHERE shopper_id = ?;"
+        get_basket_query = GET_BASKET_QUERY
         basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
         if not basket:
-            create_basket_query = "INSERT INTO shopper_baskets (shopper_id, basket_created_date_time) VALUES (?, datetime('now'));"
+            create_basket_query = CREATE_BASKET_QUERY
             self.db.exe(create_basket_query, (self.shopper.shopper_id,))
             get_last_insert_id_query = "SELECT last_insert_rowid();"
             basket_id = self.db.fetch_one(get_last_insert_id_query)[0]
@@ -118,10 +113,7 @@ class Controller:
             basket_id = basket[0]
 
         # ix. Insert the product into the basket_contents table
-        add_to_basket_query = """
-            INSERT INTO basket_contents (basket_id, product_id, seller_id, quantity, price)
-            VALUES (?, ?, ?, ?, ?);
-        """
+        add_to_basket_query = ADD_TO_BASKET_QUERY
         self.db.exe(add_to_basket_query, (basket_id, product_id, seller_id, quantity, price))
 
         # x. Commit the transaction
@@ -132,7 +124,7 @@ class Controller:
 
     def sub_3(self):
         # i. Check if there is a current basket
-        get_basket_query = "SELECT basket_id FROM shopper_baskets WHERE shopper_id = ?;"
+        get_basket_query = GET_BASKET_QUERY
         basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
         if not basket:
             TUI.print_error("Your basket is empty.\n")
@@ -141,13 +133,7 @@ class Controller:
         basket_id = basket[0]
 
         # ii. Fetch basket contents
-        get_basket_contents_query = """
-            SELECT bc.product_id, p.product_description, s.seller_name, bc.quantity, bc.price
-            FROM basket_contents bc
-            JOIN products p ON bc.product_id = p.product_id
-            JOIN sellers s ON bc.seller_id = s.seller_id
-            WHERE bc.basket_id = ?;
-        """
+        get_basket_contents_query = GET_BASKET_CONTENTS_QUERY
         basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
@@ -180,7 +166,7 @@ class Controller:
 
     def sub_4(self):
         # i.
-        get_basket_query = "SELECT basket_id FROM shopper_baskets WHERE shopper_id = ?;"
+        get_basket_query = GET_BASKET_QUERY
         basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
         if not basket:
             TUI.print_error("Your basket is empty.\n")
@@ -189,13 +175,7 @@ class Controller:
         basket_id = basket[0]
 
         # Fetch basket contents
-        get_basket_contents_query = """
-            SELECT bc.product_id, p.product_description, s.seller_name, bc.quantity, bc.price
-            FROM basket_contents bc
-            JOIN products p ON bc.product_id = p.product_id
-            JOIN sellers s ON bc.seller_id = s.seller_id
-            WHERE bc.basket_id = ?;
-        """
+        get_basket_contents_query = GET_BASKET_CONTENTS_QUERY
         basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
@@ -253,11 +233,7 @@ class Controller:
                 TUI.print_error("The quantity must be greater than 0.\n")
 
         # iv.
-        update_quantity_query = """
-            UPDATE basket_contents
-            SET quantity = ?
-            WHERE basket_id = ? AND product_id = ?;
-        """
+        update_quantity_query = UPDATE_QUANTITY_QUERY
         self.db.exe(update_quantity_query, (new_quantity, basket_id, product_id))
         self.db.commit()
 
@@ -270,7 +246,7 @@ class Controller:
 
     def sub_5(self):
         # i. Check if there is a current basket
-        get_basket_query = "SELECT basket_id FROM shopper_baskets WHERE shopper_id = ?;"
+        get_basket_query = GET_BASKET_QUERY
         basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
         if not basket:
             TUI.print_error("Your basket is empty.\n")
@@ -279,13 +255,7 @@ class Controller:
         basket_id = basket[0]
 
         # Fetch basket contents
-        get_basket_contents_query = """
-            SELECT bc.product_id, p.product_description, s.seller_name, bc.quantity, bc.price
-            FROM basket_contents bc
-            JOIN products p ON bc.product_id = p.product_id
-            JOIN sellers s ON bc.seller_id = s.seller_id
-            WHERE bc.basket_id = ?;
-        """
+        get_basket_contents_query = GET_BASKET_CONTENTS_QUERY
         basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
@@ -344,10 +314,7 @@ class Controller:
             return
 
         # iv. Remove the item from the basket
-        delete_item_query = """
-            DELETE FROM basket_contents
-            WHERE basket_id = ? AND product_id = ?;
-        """
+        delete_item_query = DELETE_ITEM_QUERY
         self.db.exe(delete_item_query, (basket_id, product_id))
         self.db.commit()
         TUI.print_success("Item removed successfully.\n")
@@ -366,7 +333,7 @@ class Controller:
 
     def sub_6(self):
         # i. Check if there is a current basket
-        get_basket_query = "SELECT basket_id FROM shopper_baskets WHERE shopper_id = ?;"
+        get_basket_query = GET_BASKET_QUERY
         basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
         if not basket:
             TUI.print_error("Your basket is empty.\n")
@@ -375,13 +342,7 @@ class Controller:
         basket_id = basket[0]
 
         # ii. Fetch and display the current basket
-        get_basket_contents_query = """
-            SELECT bc.product_id, p.product_description, s.seller_name, bc.quantity, bc.price
-            FROM basket_contents bc
-            JOIN products p ON bc.product_id = p.product_id
-            JOIN sellers s ON bc.seller_id = s.seller_id
-            WHERE bc.basket_id = ?;
-        """
+        get_basket_contents_query = GET_BASKET_CONTENTS_QUERY
         basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
@@ -427,18 +388,12 @@ class Controller:
             self.db.begin_transaction()
 
             # Insert into shopper_orders
-            insert_order_query = """
-                INSERT INTO shopper_orders (shopper_id, order_date, order_status)
-                VALUES (?, datetime('now'), 'Placed');
-            """
+            insert_order_query = INSERT_ORDER_QUERY
             self.db.exe(insert_order_query, (self.shopper.shopper_id,))
             order_id = self.db.fetch_one("SELECT last_insert_rowid();")[0]
 
             # Insert into ordered_products
-            insert_ordered_products_query = """
-                INSERT INTO ordered_products (order_id, product_id, seller_id, quantity, price, ordered_product_status)
-                VALUES (?, ?, ?, ?, ?, 'Placed');
-            """
+            insert_ordered_products_query = INSERT_ORDERED_PRODUCT_QUERY
             for item in basket_contents:
                 product_id, _, _, quantity, price = item
                 seller_id = self.db.fetch_one(
@@ -448,8 +403,8 @@ class Controller:
                 self.db.exe(insert_ordered_products_query, (order_id, product_id, seller_id, quantity, price))
 
             # Delete from basket_contents and shopper_baskets
-            delete_basket_contents_query = "DELETE FROM basket_contents WHERE basket_id = ?;"
-            delete_shopper_basket_query = "DELETE FROM shopper_baskets WHERE basket_id = ?;"
+            delete_basket_contents_query = DELETE_BASKET_CONTENTS_QUERY
+            delete_shopper_basket_query = DELETE_SHOPPER_BASKET_QUERY
             self.db.exe(delete_basket_contents_query, (basket_id,))
             self.db.exe(delete_shopper_basket_query, (basket_id,))
 
