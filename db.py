@@ -27,6 +27,12 @@ class Database:
     def commit(self):
         self.con.commit()
 
+    def rollback(self):
+        self.con.rollback()
+
+    def begin_transaction(self):
+        self.con.execute("BEGIN TRANSACTION;")
+
     def populate(self, script_path):
         with open(script_path, 'r') as file:
             script = file.read()
