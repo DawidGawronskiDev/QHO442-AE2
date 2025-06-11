@@ -166,88 +166,23 @@ class Controller:
         self.display_basket_contents(basket_contents)
 
     def sub_6(self):
-        # i. Check if there is a current basket
-        get_basket_query = GET_BASKET_QUERY
-        basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
+        basket = self.get_basket()
         if not basket:
             TUI.print_error("Your basket is empty.\n")
             return
 
-        basket_id = basket[0]
-
-        # ii. Fetch and display the current basket
-        get_basket_contents_query = GET_BASKET_CONTENTS_QUERY
-        basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
+        basket_contents = self.get_basket_contents(basket[0])
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
             return
 
-        # Display basket contents
-        rows = []
-        total_cost = 0
-        for idx, item in enumerate(basket_contents, start=1):
-            product_id, product_description, seller_name, quantity, price = item
-            item_total = quantity * price
-            total_cost += item_total
-            rows.append((
-                idx,
-                product_description,
-                seller_name,
-                quantity,
-                f"£{price:.2f}",
-                f"£{item_total:.2f}"
-            ))
+        self.display_basket_contents(basket_contents)
 
-        TUI.print_header("Basket Contents")
-        Table(
-            (12, 64, 24, 8, 12, 12),
-            ("Item No.", "Description", "Seller", "Qty", "Price", "Total"),
-            rows
-        ).print_table()
-        print(f"\nBasket Total: £{total_cost:.2f}\n")
-
-        # Confirm checkout
-        while True:
-            confirmation = input("Do you wish to proceed with the checkout? (Y/N): ").strip().upper()
-            if confirmation in ("Y", "N"):
-                break
-            TUI.print_error("Invalid input. Please enter Y or N.\n")
-
-        if confirmation == "N":
+        if not self.confirm_checkout():
             TUI.print_success("Checkout canceled.\n")
             return
 
-        # iii, iv, v. Perform checkout as a single transaction
-        try:
-            self.db.begin_transaction()
-
-            # Insert into shopper_orders
-            insert_order_query = INSERT_ORDER_QUERY
-            self.db.exe(insert_order_query, (self.shopper.shopper_id,))
-            order_id = self.db.fetch_one("SELECT last_insert_rowid();")[0]
-
-            # Insert into ordered_products
-            insert_ordered_products_query = INSERT_ORDERED_PRODUCT_QUERY
-            for item in basket_contents:
-                product_id, _, _, quantity, price = item
-                seller_id = self.db.fetch_one(
-                    "SELECT seller_id FROM basket_contents WHERE basket_id = ? AND product_id = ?;",
-                    (basket_id, product_id)
-                )[0]
-                self.db.exe(insert_ordered_products_query, (order_id, product_id, seller_id, quantity, price))
-
-            # Delete from basket_contents and shopper_baskets
-            delete_basket_contents_query = DELETE_BASKET_CONTENTS_QUERY
-            delete_shopper_basket_query = DELETE_SHOPPER_BASKET_QUERY
-            self.db.exe(delete_basket_contents_query, (basket_id,))
-            self.db.exe(delete_shopper_basket_query, (basket_id,))
-
-            # Commit transaction
-            self.db.commit()
-            TUI.print_success("Checkout complete, your order has been placed.\n")
-        except Exception as e:
-            self.db.rollback()
-            TUI.print_error(f"An error occurred during checkout: {e}\n")
+        self.process_checkout(basket[0], basket_contents)
 
     def select_category(self):
         categories = self.db.fetch_many(GET_CATEGORIES_QUERY)
@@ -345,6 +280,39 @@ class Controller:
         self.db.exe(DELETE_ITEM_QUERY, (basket_id, product_id))
         self.db.commit()
 
+    def confirm_checkout(self):
+        while True:
+            confirmation = input("Do you wish to proceed with the checkout? (Y/N): ").strip().upper()
+            if confirmation in ("Y", "N"):
+                return confirmation == "Y"
+            TUI.print_error("Invalid input. Please enter Y or N.\n")
+
+    def process_checkout(self, basket_id, basket_contents):
+        try:
+            self.db.begin_transaction()
+
+            # Insert into shopper_orders
+            self.db.exe(INSERT_ORDER_QUERY, (self.shopper.shopper_id,))
+            order_id = self.db.fetch_one(GET_LAST_INSERT_ID_QUERY)[0]
+
+            # Insert into ordered_products
+            for item in basket_contents:
+                product_id, _, _, quantity, price = item
+                seller_id = self.db.fetch_one(
+                    "SELECT seller_id FROM basket_contents WHERE basket_id = ? AND product_id = ?;",
+                    (basket_id, product_id)
+                )[0]
+                self.db.exe(INSERT_ORDERED_PRODUCT_QUERY, (order_id, product_id, seller_id, quantity, price))
+
+            # Clear the basket
+            self.db.exe(DELETE_BASKET_CONTENTS_QUERY, (basket_id,))
+            self.db.exe(DELETE_SHOPPER_BASKET_QUERY, (basket_id,))
+
+            self.db.commit()
+            TUI.print_success("Checkout complete, your order has been placed.\n")
+        except Exception as e:
+            self.db.rollback()
+            TUI.print_error(f"An error occurred during checkout: {e}\n")
 
 if __name__ == "__main__":
     Controller("./db/parana.db")
