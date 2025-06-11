@@ -90,17 +90,17 @@ class Controller:
         TUI.print_success("Item added to your basket.\n")
 
     def sub_3(self):
-        basket = Basket.get_basket(self.db, self.shopper.shopper_id)
+        basket = self.get_basket()
         if not basket:
             TUI.print_error("Your basket is empty.\n")
             return
 
-        basket_contents = Basket.get_basket_contents(self.db, basket[0])
+        basket_contents = self.get_basket_contents(basket[0])
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
             return
 
-        Basket.display_basket_contents(basket_contents)
+        self.display_basket_contents(basket_contents)
 
     def sub_4(self):
         # i.
@@ -399,6 +399,15 @@ class Controller:
     def add_item_to_basket(self, basket_id, product_id, seller_id, quantity, price):
         self.db.exe(ADD_TO_BASKET_QUERY, (basket_id, product_id, seller_id, quantity, price))
         self.db.commit()
+
+    def get_basket(self):
+        return Basket.get_basket(self.db, self.shopper.shopper_id)
+
+    def get_basket_contents(self, basket_id):
+        return Basket.get_basket_contents(self.db, basket_id)
+
+    def display_basket_contents(self, basket_contents):
+        Basket.display_basket_contents(basket_contents)
 
 
 if __name__ == "__main__":
