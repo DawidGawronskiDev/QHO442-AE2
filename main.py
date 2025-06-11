@@ -132,91 +132,38 @@ class Controller:
         self.sub_3()
 
     def sub_5(self):
-        # i. Check if there is a current basket
-        get_basket_query = GET_BASKET_QUERY
-        basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
+        basket = self.get_basket()
         if not basket:
             TUI.print_error("Your basket is empty.\n")
             return
 
-        basket_id = basket[0]
-
-        # Fetch basket contents
-        get_basket_contents_query = GET_BASKET_CONTENTS_QUERY
-        basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
+        basket_contents = self.get_basket_contents(basket[0])
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
             return
 
-        # Display current basket
-        rows = []
-        total_cost = 0
-        for idx, item in enumerate(basket_contents, start=1):
-            product_id, product_description, seller_name, quantity, price = item
-            item_total = quantity * price
-            total_cost += item_total
-            rows.append((
-                idx,
-                product_description,
-                seller_name,
-                quantity,
-                f"£{price:.2f}",
-                f"£{item_total:.2f}"
-            ))
+        self.display_basket_contents(basket_contents)
 
-        TUI.print_header("Basket Contents")
-        Table(
-            (12, 64, 24, 8, 12, 12),
-            ("Item No.", "Description", "Seller", "Qty", "Price", "Total"),
-            rows
-        ).print_table()
-        print(f"\nBasket Total: £{total_cost:.2f}\n")
-
-        # ii. Prompt user to select basket item no.
-        if len(basket_contents) > 1:
-            while True:
-                try:
-                    item_no = int(input("Enter the basket item no. you want to remove: ").strip())
-                    if 1 <= item_no <= len(basket_contents):
-                        break
-                    else:
-                        TUI.print_error("The basket item no. you have entered is invalid.\n")
-                except ValueError:
-                    TUI.print_error("The basket item no. you have entered is invalid.\n")
-        else:
-            item_no = 1
+        item_no = self.select_basket_item(basket_contents)
+        if item_no is None:
+            return
 
         selected_item = basket_contents[item_no - 1]
         product_id = selected_item[0]
 
-        # iii. Prompt user to confirm removal
-        while True:
-            confirmation = input("Are you sure you want to remove this item? (Y/N): ").strip().upper()
-            if confirmation in ("Y", "N"):
-                break
-            TUI.print_error("Invalid input. Please enter Y or N.\n")
-
-        if confirmation == "N":
+        if not self.confirm_removal():
             TUI.print_success("Item removal canceled.\n")
             return
 
-        # iv. Remove the item from the basket
-        delete_item_query = DELETE_ITEM_QUERY
-        self.db.exe(delete_item_query, (basket_id, product_id))
-        self.db.commit()
+        self.remove_item_from_basket(basket[0], product_id)
         TUI.print_success("Item removed successfully.\n")
 
-        # v. Check if the basket is now empty
-        basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
+        basket_contents = self.get_basket_contents(basket[0])
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
             return
 
-        # Display updated basket
-        self.sub_3()  # Reuse the basket display logic from Option 3
-
-        # vi. Return to the main menu
-        return
+        self.display_basket_contents(basket_contents)
 
     def sub_6(self):
         # i. Check if there is a current basket
@@ -385,6 +332,17 @@ class Controller:
 
     def update_item_quantity(self, basket_id, product_id, new_quantity):
         self.db.exe(UPDATE_QUANTITY_QUERY, (new_quantity, basket_id, product_id))
+        self.db.commit()
+
+    def confirm_removal(self):
+        while True:
+            confirmation = input("Are you sure you want to remove this item? (Y/N): ").strip().upper()
+            if confirmation in ("Y", "N"):
+                return confirmation == "Y"
+            TUI.print_error("Invalid input. Please enter Y or N.\n")
+
+    def remove_item_from_basket(self, basket_id, product_id):
+        self.db.exe(DELETE_ITEM_QUERY, (basket_id, product_id))
         self.db.commit()
 
 
