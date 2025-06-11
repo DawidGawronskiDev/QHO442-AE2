@@ -29,7 +29,7 @@ GET_SELLERS_QUERY = """
 # Shopper Baskets
 
 GET_BASKET_QUERY = """
-    SELECT basket_id 
+    SELECT *
     FROM shopper_baskets
     WHERE shopper_id = ?;
 """
@@ -87,4 +87,9 @@ INSERT_ORDER_QUERY = """
 INSERT_ORDERED_PRODUCT_QUERY = """
     INSERT INTO ordered_products (order_id, product_id, seller_id, quantity, price, ordered_product_status)
     VALUES (?, ?, ?, ?, ?, 'Placed');
+"""
+
+# Extras
+GET_LAST_INSERT_ID_QUERY = """
+    SELECT last_insert_rowid();
 """
