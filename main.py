@@ -36,28 +36,33 @@ class Controller:
         self.sub()
 
     def sub(self):
-        menu = [
-            ("Display your order history", self.sub_1),
-            ("Add an item to your basket", self.sub_2),
-            ("View your basket", self.sub_3),
-            ("Change the quantity of an item in your basket", self.sub_4),
-            ("Remove an item from your basket", self.sub_5),
-            ("Checkout", self.sub_6),
-            ("Exit", exit)
-        ]
+        options = {
+            1: "Display your order history",
+            2: "Add an item to your basket",
+            3: "View your basket",
+            4: "Change the quantity of an item in your basket",
+            5: "Remove an item from your basket",
+            6: "Checkout",
+            7: "Exit"
+        }
+
+        actions = {
+            1: self.sub_1,
+            2: self.sub_2,
+            3: self.sub_3,
+            4: self.sub_4,
+            5: self.sub_5,
+            6: self.sub_6,
+            7: exit
+        }
 
         while True:
-            for i, (description, _) in enumerate(menu, start=1):
-                print(f"{i}: {description}")
+            for option in options.items():
+                print(f"{option[0]}: {option[1]}")
+            choice = int(input("Choose an option: ").strip())
 
-            choice = Validator.validate_numeric_input(
-                "Choose an option: ",
-                "Invalid choice. Please enter a valid option.",
-                min_value=1,
-                max_value=len(menu)
-            )
-
-            menu[choice - 1][1]()
+            if choice in options.keys():
+                actions[choice]()
 
     def sub_1(self):
         self.shopper.display_your_order_history(self.db)
@@ -207,11 +212,14 @@ class Controller:
         return seller_id, price
 
     def get_quantity(self):
-        return Validator.validate_numeric_input(
-            "Enter the quantity: ",
-            "Invalid input. Please enter a numeric value.",
-            min_value=1
-        )
+        while True:
+            try:
+                quantity = int(input("Enter the quantity: ").strip())
+                if quantity > 0:
+                    return quantity
+                TUI.print_error("The quantity must be greater than 0.\n")
+            except ValueError:
+                TUI.print_error("Invalid input. Please enter a numeric value.\n")
 
     def get_or_create_basket(self):
         basket = self.db.fetch_one(GET_BASKET_QUERY, (self.shopper.shopper_id,))
@@ -234,20 +242,28 @@ class Controller:
 
     def select_basket_item(self, basket_contents):
         if len(basket_contents) > 1:
-            return Validator.validate_numeric_input(
-                "Enter the basket item no. you want to update: ",
-                "Invalid input. Please enter a valid item number.",
-                min_value=1,
-                max_value=len(basket_contents)
-            )
-        return 1
+            while True:
+                try:
+                    item_no = int(input("Enter the basket item no. you want to update: ").strip())
+                    if 1 <= item_no <= len(basket_contents):
+                        return item_no
+                    else:
+                        TUI.print_error("The basket item no. you have entered is invalid.\n")
+                except ValueError:
+                    TUI.print_error("The basket item no. you have entered is invalid.\n")
+        else:
+            return 1
 
     def get_new_quantity(self):
-        return Validator.validate_numeric_input(
-            "Enter the new quantity of the selected product you want to buy: ",
-            "Invalid input. Please enter a numeric value.",
-            min_value=1
-        )
+        while True:
+            try:
+                new_quantity = int(input("Enter the new quantity of the selected product you want to buy: ").strip())
+                if new_quantity > 0:
+                    return new_quantity
+                else:
+                    TUI.print_error("The quantity must be greater than zero.\n")
+            except ValueError:
+                TUI.print_error("The quantity must be greater than 0.\n")
 
     def update_item_quantity(self, basket_id, product_id, new_quantity):
         self.db.exe(UPDATE_QUANTITY_QUERY, (new_quantity, basket_id, product_id))
