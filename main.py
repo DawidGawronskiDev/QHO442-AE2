@@ -48,6 +48,7 @@ class Controller:
             3: self.sub_3,
             4: self.sub_4,
             5: self.sub_5,
+            6: self.sub_6,
             7: exit
         }
 
@@ -362,6 +363,102 @@ class Controller:
 
         # vi. Return to the main menu
         return
+
+    def sub_6(self):
+        # i. Check if there is a current basket
+        get_basket_query = "SELECT basket_id FROM shopper_baskets WHERE shopper_id = ?;"
+        basket = self.db.fetch_one(get_basket_query, (self.shopper.shopper_id,))
+        if not basket:
+            TUI.print_error("Your basket is empty.\n")
+            return
+
+        basket_id = basket[0]
+
+        # ii. Fetch and display the current basket
+        get_basket_contents_query = """
+            SELECT bc.product_id, p.product_description, s.seller_name, bc.quantity, bc.price
+            FROM basket_contents bc
+            JOIN products p ON bc.product_id = p.product_id
+            JOIN sellers s ON bc.seller_id = s.seller_id
+            WHERE bc.basket_id = ?;
+        """
+        basket_contents = self.db.fetch_many(get_basket_contents_query, (basket_id,))
+        if not basket_contents:
+            TUI.print_error("Your basket is empty.\n")
+            return
+
+        # Display basket contents
+        rows = []
+        total_cost = 0
+        for idx, item in enumerate(basket_contents, start=1):
+            product_id, product_description, seller_name, quantity, price = item
+            item_total = quantity * price
+            total_cost += item_total
+            rows.append((
+                idx,
+                product_description,
+                seller_name,
+                quantity,
+                f"£{price:.2f}",
+                f"£{item_total:.2f}"
+            ))
+
+        TUI.print_header("Basket Contents")
+        Table(
+            (12, 64, 24, 8, 12, 12),
+            ("Item No.", "Description", "Seller", "Qty", "Price", "Total"),
+            rows
+        ).print_table()
+        print(f"\nBasket Total: £{total_cost:.2f}\n")
+
+        # Confirm checkout
+        while True:
+            confirmation = input("Do you wish to proceed with the checkout? (Y/N): ").strip().upper()
+            if confirmation in ("Y", "N"):
+                break
+            TUI.print_error("Invalid input. Please enter Y or N.\n")
+
+        if confirmation == "N":
+            TUI.print_success("Checkout canceled.\n")
+            return
+
+        # iii, iv, v. Perform checkout as a single transaction
+        try:
+            self.db.begin_transaction()
+
+            # Insert into shopper_orders
+            insert_order_query = """
+                INSERT INTO shopper_orders (shopper_id, order_date, order_status)
+                VALUES (?, datetime('now'), 'Placed');
+            """
+            self.db.exe(insert_order_query, (self.shopper.shopper_id,))
+            order_id = self.db.fetch_one("SELECT last_insert_rowid();")[0]
+
+            # Insert into ordered_products
+            insert_ordered_products_query = """
+                INSERT INTO ordered_products (order_id, product_id, seller_id, quantity, price, ordered_product_status)
+                VALUES (?, ?, ?, ?, ?, 'Placed');
+            """
+            for item in basket_contents:
+                product_id, _, _, quantity, price = item
+                seller_id = self.db.fetch_one(
+                    "SELECT seller_id FROM basket_contents WHERE basket_id = ? AND product_id = ?;",
+                    (basket_id, product_id)
+                )[0]
+                self.db.exe(insert_ordered_products_query, (order_id, product_id, seller_id, quantity, price))
+
+            # Delete from basket_contents and shopper_baskets
+            delete_basket_contents_query = "DELETE FROM basket_contents WHERE basket_id = ?;"
+            delete_shopper_basket_query = "DELETE FROM shopper_baskets WHERE basket_id = ?;"
+            self.db.exe(delete_basket_contents_query, (basket_id,))
+            self.db.exe(delete_shopper_basket_query, (basket_id,))
+
+            # Commit transaction
+            self.db.commit()
+            TUI.print_success("Checkout complete, your order has been placed.\n")
+        except Exception as e:
+            self.db.rollback()
+            TUI.print_error(f"An error occurred during checkout: {e}\n")
 
 
 if __name__ == "__main__":
