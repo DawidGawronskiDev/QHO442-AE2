@@ -4,6 +4,8 @@ from shopper import Shopper
 from basket import Basket
 from table import Table
 from queries import *
+from validator import Validator
+
 
 class Controller:
     def __init__(self, db_path):
@@ -15,12 +17,11 @@ class Controller:
             self.run()
 
     def run(self):
-        shopper_id = input("Enter Shopper ID: ").strip()
-        if not shopper_id.isdigit():
-            TUI.print_error("Invalid Shopper ID. Please enter a numeric value.\n")
-            return
-
-        shopper_id = int(shopper_id)
+        shopper_id = Validator.validate_numeric_input(
+            "Enter Shopper ID: ",
+            "Invalid Shopper ID. Please enter a numeric value.",
+            min_value=1
+        )
 
         row = self.db.fetch_one(GET_SHOPPERS_QUERY, (shopper_id,))
         if row is None:
@@ -58,10 +59,13 @@ class Controller:
         while True:
             for option in options.items():
                 print(f"{option[0]}: {option[1]}")
-            choice = int(input("Choose an option: ").strip())
-
-            if choice in options.keys():
-                actions[choice]()
+            choice = Validator.validate_numeric_input(
+                "Choose an option: ",
+                "Invalid choice. Please enter a valid option.",
+                min_value=1,
+                max_value=len(options)
+            )
+            actions[choice]()
 
     def sub_1(self):
         self.shopper.display_your_order_history(self.db)
@@ -211,14 +215,11 @@ class Controller:
         return seller_id, price
 
     def get_quantity(self):
-        while True:
-            try:
-                quantity = int(input("Enter the quantity: ").strip())
-                if quantity > 0:
-                    return quantity
-                TUI.print_error("The quantity must be greater than 0.\n")
-            except ValueError:
-                TUI.print_error("Invalid input. Please enter a numeric value.\n")
+        return Validator.validate_numeric_input(
+            "Enter the quantity: ",
+            "Invalid input. Please enter a numeric value.",
+            min_value=1
+        )
 
     def get_or_create_basket(self):
         basket = self.db.fetch_one(GET_BASKET_QUERY, (self.shopper.shopper_id,))
@@ -241,28 +242,20 @@ class Controller:
 
     def select_basket_item(self, basket_contents):
         if len(basket_contents) > 1:
-            while True:
-                try:
-                    item_no = int(input("Enter the basket item no. you want to update: ").strip())
-                    if 1 <= item_no <= len(basket_contents):
-                        return item_no
-                    else:
-                        TUI.print_error("The basket item no. you have entered is invalid.\n")
-                except ValueError:
-                    TUI.print_error("The basket item no. you have entered is invalid.\n")
-        else:
-            return 1
+            return Validator.validate_numeric_input(
+                "Enter the basket item no. you want to update: ",
+                "Invalid input. Please enter a valid item number.",
+                min_value=1,
+                max_value=len(basket_contents)
+            )
+        return 1
 
     def get_new_quantity(self):
-        while True:
-            try:
-                new_quantity = int(input("Enter the new quantity of the selected product you want to buy: ").strip())
-                if new_quantity > 0:
-                    return new_quantity
-                else:
-                    TUI.print_error("The quantity must be greater than zero.\n")
-            except ValueError:
-                TUI.print_error("The quantity must be greater than 0.\n")
+        return Validator.validate_numeric_input(
+            "Enter the new quantity of the selected product you want to buy: ",
+            "Invalid input. Please enter a numeric value.",
+            min_value=1
+        )
 
     def update_item_quantity(self, basket_id, product_id, new_quantity):
         self.db.exe(UPDATE_QUANTITY_QUERY, (new_quantity, basket_id, product_id))
