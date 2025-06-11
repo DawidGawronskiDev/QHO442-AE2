@@ -1,6 +1,7 @@
 from db import Database
 from basket import Basket
 from tui import TUI
+from table import Table
 
 class Shopper:
     def __init__(self, shopper_id, shopper_account_ref, shopper_first_name, shopper_surname,
@@ -48,8 +49,8 @@ class Shopper:
             return
 
         # This code needs refactoring
-        TUI.print_table(
+        Table(
             (12, 16, 48, 24, 8, 8, 12),
             ("Order ID", "Order Date", "Product Description", "Seller", "Price", "Qty", "Status"),
             rows
-        )
+        ).print_table()
