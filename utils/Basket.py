@@ -1,10 +1,14 @@
 from utils.TUI import TUI
 from utils.Table import Table
-from queries import GET_BASKET_QUERY, GET_BASKET_CONTENTS_QUERY, CREATE_BASKET_QUERY, GET_LAST_INSERT_ID_QUERY
+from queries import *
 
 
 class Basket:
+    """A class representing a shopping basket for a shopper."""
     def __init__(self, shopper_id, db):
+        """
+        Initializes a new Basket instance.
+        """
         self.items = []
         self.shopper_id = shopper_id
         self.db = db
@@ -12,18 +16,21 @@ class Basket:
 
     @staticmethod
     def get_basket(db, shopper_id):
+        """ Retrieves the basket for a given shopper ID."""
         get_basket_query = GET_BASKET_QUERY
         basket = db.fetch_one(get_basket_query, (shopper_id,))
         return basket
 
     @staticmethod
     def get_basket_contents(db, basket_id):
+        """ Retrieves the contents of a basket by its ID."""
         get_basket_contents_query = GET_BASKET_CONTENTS_QUERY
         basket_contents = db.fetch_many(get_basket_contents_query, (basket_id,))
         return basket_contents
 
     @staticmethod
     def display_basket_contents(basket_contents):
+        """ Displays the contents of the basket in a formatted table."""
         rows = []
         total_cost = 0
         for idx, item in enumerate(basket_contents, start=1):
@@ -48,31 +55,23 @@ class Basket:
 
     @staticmethod
     def create_basket(db, shopper_id):
+        """ Creates a new basket for the given shopper ID."""
         db.exe(CREATE_BASKET_QUERY, (shopper_id,))
         return db.fetch_one(GET_LAST_INSERT_ID_QUERY)[0]
 
     @staticmethod
     def get_most_recent_basket(db, shopper_id):
-        query = """
-            SELECT basket_id
-            FROM shopper_baskets
-            WHERE shopper_id = ?
-              AND DATE(basket_created_date_time) = DATE('now')
-            ORDER BY basket_created_date_time DESC
-            LIMIT 1
-        """
+        """ Retrieves the most recent basket ID for a shopper."""
+        query = GET_MOST_RECENT_BASKET_QUERY
         result = db.fetch_one(query, (shopper_id,))
         return result[0] if result else None
 
     def load_items(self):
+        """ Loads items from the database into the basket."""
         if not self.basket_id:
             raise ValueError("Basket ID is not set. Cannot load items.")
 
-        query = """
-            SELECT bc.product_id, bc.seller_id, bc.quantity, bc.price
-            FROM basket_contents bc
-            WHERE bc.basket_id = ?;
-        """
+        query = GET_BASKET_CONTENTS_FOR_CHECKOUT_QUERY
         items = self.db.fetch_many(query, (self.basket_id,))
         self.items = [
             {
@@ -86,30 +85,13 @@ class Basket:
 
     @classmethod
     def initialize(cls, db, shopper_id):
+        """ Initializes a basket for a shopper, loading existing items if available."""
         basket = cls(shopper_id, db)
         basket.basket_id = cls.get_most_recent_basket(db, shopper_id)
         if basket.basket_id:
             basket.load_items()
         return basket
 
-    def add_item(self, item):
-        if item in self.items:
-            raise ValueError("Item already exists in the basket.")
-        self.items.append(item)
-
-    def remove_item(self, item):
-        if item not in self.items:
-            raise ValueError("Item not found in the basket.")
-        self.items.remove(item)
-
-    def get_items(self):
-        return self.items
-
-    def clear(self):
-        self.items.clear()
-
     def __str__(self):
+        """ Returns a string representation of the basket."""
         return f"Basket(shopper_id={self.shopper_id}, items={self.items})"
-
-    def __repr__(self):
-        return f"<Basket(shopper_id={self.shopper_id}, basket_id={self.basket_id}, items={len(self.items)})>"

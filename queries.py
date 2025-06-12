@@ -33,6 +33,15 @@ GET_SELLERS_QUERY = """
 
 # Shopper Baskets
 
+GET_MOST_RECENT_BASKET_QUERY = """
+    SELECT basket_id
+    FROM shopper_baskets
+    WHERE shopper_id = ?
+        AND DATE(basket_created_date_time) = DATE('now')
+    ORDER BY basket_created_date_time DESC
+    LIMIT 1
+"""
+
 GET_BASKET_QUERY = """
     SELECT *
     FROM shopper_baskets
@@ -80,6 +89,12 @@ DELETE_ITEM_QUERY = """
 DELETE_BASKET_CONTENTS_QUERY = """
     DELETE FROM basket_contents 
     WHERE basket_id = ?;
+"""
+
+GET_BASKET_CONTENTS_FOR_CHECKOUT_QUERY = """
+    SELECT bc.product_id, bc.seller_id, bc.quantity, bc.price
+    FROM basket_contents bc
+    WHERE bc.basket_id = ?;
 """
 
 # Orders
