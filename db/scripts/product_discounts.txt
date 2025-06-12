@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS product_discounts;
 
 CREATE TABLE product_discounts (
     discount_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    product_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL UNIQUE,
     discount_percentage REAL NOT NULL CHECK (discount_percentage BETWEEN 0 AND 100),
     end_date TEXT NOT NULL,
     CONSTRAINT discounts_product_fk FOREIGN KEY (product_id) REFERENCES products(product_id)

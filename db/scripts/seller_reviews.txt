@@ -4,15 +4,11 @@ CREATE TABLE seller_reviews (
     review_id INTEGER PRIMARY KEY AUTOINCREMENT,
     seller_id INTEGER NOT NULL,
     shopper_id INTEGER NOT NULL,
-    star_rating INTEGER NOT NULL,
-    review_comment TEXT,
+    star_rating INTEGER NOT NULL CHECK (star_rating IN (1, 2, 3, 4, 5)),
+    review_comment TEXT DEFAULT 'No comment',
     review_date TEXT DEFAULT (datetime('now')),
-    CONSTRAINT seller_reviews_sellers_fk
-        FOREIGN KEY (seller_id) REFERENCES sellers(seller_id),
-    CONSTRAINT seller_reviews_shoppers_fk
-        FOREIGN KEY (shopper_id) REFERENCES shoppers(shopper_id),
-    CONSTRAINT seller_reviews_star_rating_check
-        CHECK (star_rating IN (1, 2, 3, 4, 5))
+    CONSTRAINT seller_reviews_sellers_fk FOREIGN KEY (seller_id) REFERENCES sellers(seller_id),
+    CONSTRAINT seller_reviews_shoppers_fk FOREIGN KEY (shopper_id) REFERENCES shoppers(shopper_id)
 );
 
 INSERT INTO seller_reviews
