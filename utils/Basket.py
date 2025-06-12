@@ -15,6 +15,18 @@ class Basket:
         self.basket_id = None
 
     @staticmethod
+    def get_or_create_basket(db, shopper_id):
+        basket = db.fetch_one(GET_BASKET_QUERY, (shopper_id,))
+        if not basket:
+            return Basket.create_basket(db, shopper_id)
+        return basket
+
+    @staticmethod
+    def add_item_to_basket(db, basket_id, product_id, seller_id, quantity, price):
+        db.exe(ADD_TO_BASKET_QUERY, (basket_id, product_id, seller_id, quantity, price))
+        db.commit()
+
+    @staticmethod
     def get_basket(db, shopper_id):
         """ Retrieves the basket for a given shopper ID."""
         get_basket_query = GET_BASKET_QUERY
@@ -52,6 +64,33 @@ class Basket:
               rows).print_table()
 
         print(f"\nBasket Total: £{total_cost:.2f}\n")
+
+    @staticmethod
+    def is_basket_empty(db, shopper_id):
+        basket = Basket.get_basket(db, shopper_id)
+        if not basket:
+            TUI.print_error("Your basket is empty.\n")
+            return True
+        basket_contents = Basket.get_basket_contents(db, basket[0])
+        if not basket_contents:
+            TUI.print_error("Your basket is empty.\n")
+            return True
+        return False
+
+    @staticmethod
+    def select_basket_item(basket_contents):
+        if len(basket_contents) > 1:
+            while True:
+                try:
+                    item_no = int(input("Enter the basket item no. you want to update: ").strip())
+                    if 1 <= item_no <= len(basket_contents):
+                        return item_no
+                    else:
+                        TUI.print_error("The basket item no. you have entered is invalid.\n")
+                except ValueError:
+                    TUI.print_error("The basket item no. you have entered is invalid.\n")
+        else:
+            return 1
 
     @staticmethod
     def create_basket(db, shopper_id):
