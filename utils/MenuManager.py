@@ -1,4 +1,5 @@
 from utils.Validator import Validator
+from utils.TUI import TUI
 
 class MenuManager:
     def __init__(self, controller):
@@ -14,6 +15,8 @@ class MenuManager:
         }
 
     def display_menu(self):
+        TUI.print_header("PARANÁ – SHOPPER MAIN MENU")
+
         while True:
             for key, (desc, _) in self.options.items():
                 print(f"{key}. {desc}")

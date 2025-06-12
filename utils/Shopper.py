@@ -39,7 +39,7 @@ class Shopper:
 
         # This code needs refactoring
         Table(
-            (12, 16, 48, 24, 8, 8, 12),
+            (12, 16, 96, 24, 8, 8, 12),
             ("Order ID", "Order Date", "Product Description", "Seller", "Price", "Qty", "Status"),
             rows
         ).print_table()
