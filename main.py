@@ -90,28 +90,16 @@ class Controller:
         TUI.print_success("Item added to your basket.\n")
 
     def sub_3(self):
-        basket = self.get_basket()
-        if not basket:
-            TUI.print_error("Your basket is empty.\n")
+        if self.is_basket_empty():
             return
-
-        basket_contents = self.get_basket_contents(basket[0])
-        if not basket_contents:
-            TUI.print_error("Your basket is empty.\n")
-            return
-
+        basket_contents = self.get_basket_contents(self.get_basket()[0])
         self.display_basket_contents(basket_contents)
 
     def sub_4(self):
-        basket = self.get_basket()
-        if not basket:
-            TUI.print_error("Your basket is empty.\n")
+        if self.is_basket_empty():
             return
-
-        basket_contents = self.get_basket_contents(basket[0])
-        if not basket_contents:
-            TUI.print_error("Your basket is empty.\n")
-            return
+        basket_contents = self.get_basket_contents(self.get_basket()[0])
+        self.display_basket_contents(basket_contents)
 
         self.display_basket_contents(basket_contents)
 
@@ -126,22 +114,15 @@ class Controller:
         if new_quantity is None:
             return
 
-        self.update_item_quantity(basket[0], product_id, new_quantity)
+        self.update_item_quantity(self.get_basket()[0], product_id, new_quantity)
         TUI.print_success("Quantity updated successfully.\n")
 
         self.sub_3()
 
     def sub_5(self):
-        basket = self.get_basket()
-        if not basket:
-            TUI.print_error("Your basket is empty.\n")
+        if self.is_basket_empty():
             return
-
-        basket_contents = self.get_basket_contents(basket[0])
-        if not basket_contents:
-            TUI.print_error("Your basket is empty.\n")
-            return
-
+        basket_contents = self.get_basket_contents(self.get_basket()[0])
         self.display_basket_contents(basket_contents)
 
         item_no = self.select_basket_item(basket_contents)
@@ -155,10 +136,10 @@ class Controller:
             TUI.print_success("Item removal canceled.\n")
             return
 
-        self.remove_item_from_basket(basket[0], product_id)
+        self.remove_item_from_basket(self.get_basket()[0], product_id)
         TUI.print_success("Item removed successfully.\n")
 
-        basket_contents = self.get_basket_contents(basket[0])
+        basket_contents = self.get_basket_contents(self.get_basket()[0])
         if not basket_contents:
             TUI.print_error("Your basket is empty.\n")
             return
@@ -166,23 +147,16 @@ class Controller:
         self.display_basket_contents(basket_contents)
 
     def sub_6(self):
-        basket = self.get_basket()
-        if not basket:
-            TUI.print_error("Your basket is empty.\n")
+        if self.is_basket_empty():
             return
-
-        basket_contents = self.get_basket_contents(basket[0])
-        if not basket_contents:
-            TUI.print_error("Your basket is empty.\n")
-            return
-
+        basket_contents = self.get_basket_contents(self.get_basket()[0])
         self.display_basket_contents(basket_contents)
 
         if not self.confirm_checkout():
             TUI.print_success("Checkout canceled.\n")
             return
 
-        self.process_checkout(basket[0], basket_contents)
+        self.process_checkout(self.get_basket()[0], basket_contents)
 
     def select_category(self):
         categories = self.db.fetch_many(GET_CATEGORIES_QUERY)
@@ -313,6 +287,17 @@ class Controller:
         except Exception as e:
             self.db.rollback()
             TUI.print_error(f"An error occurred during checkout: {e}\n")
+
+    def is_basket_empty(self):
+        basket = self.get_basket()
+        if not basket:
+            TUI.print_error("Your basket is empty.\n")
+            return True
+        basket_contents = self.get_basket_contents(basket[0])
+        if not basket_contents:
+            TUI.print_error("Your basket is empty.\n")
+            return True
+        return False
 
 if __name__ == "__main__":
     Controller("db/parana.db")
