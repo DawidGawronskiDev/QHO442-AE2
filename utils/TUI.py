@@ -9,7 +9,7 @@ class TUI:
         from utils.Validator import Validator
         option_num = 1
         option_list = []
-        print("\n", title, "\n")
+        TUI.print_header(title)
         for option in all_options:
             code = option[0]
             desc = option[1]

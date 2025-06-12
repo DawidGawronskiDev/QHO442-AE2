@@ -3,9 +3,9 @@ from utils.Validator import Validator
 from utils.Shopper import Shopper
 from utils.TUI import TUI
 from utils.Basket import Basket
-from utils.Select import Select
+from utils.SelectManager import SelectManager
 from utils.CheckoutManager import CheckoutManager
-from utils.Menu import MenuManager
+from utils.MenuManager import MenuManager
 from queries import *
 
 
@@ -31,7 +31,7 @@ class Controller:
         row = self.db.fetch_one(GET_SHOPPERS_QUERY, (shopper_id,))
         if row is None:
             TUI.print_error("Shopper not found.\n")
-            return
+            exit()
 
         self.shopper = Shopper(*row)
         self.shopper.init_basket(self.db)
@@ -46,15 +46,15 @@ class Controller:
 
     def sub_2(self):
         """Adds an item to the shopper's basket."""
-        category_id = Select.select_category(self.db)
+        category_id = SelectManager.select_category(self.db)
         if not category_id:
             return
 
-        product_id = Select.select_product(self.db, category_id)
+        product_id = SelectManager.select_product(self.db, category_id)
         if not product_id:
             return
 
-        seller_id, price = Select.select_seller(self.db, product_id)
+        seller_id, price = SelectManager.select_seller(self.db, product_id)
         if not seller_id:
             return
 
@@ -63,9 +63,13 @@ class Controller:
             return
 
         basket_id = Basket.get_or_create_basket(self.db, self.shopper.shopper_id)[0]
-        Basket.add_item_to_basket(self.db, basket_id, product_id, seller_id, quantity, price)
 
-        TUI.print_success("Item added to your basket.\n")
+        try:
+            Basket.add_item_to_basket(self.db, basket_id, product_id, seller_id, quantity, price)
+            TUI.print_success("Item added to your basket.\n")
+        except Exception as e:
+            TUI.print_error(f"An error occurred while adding the item to your basket: {e}\n")
+            return
 
     def sub_3(self):
         """Displays the contents of the shopper's basket."""

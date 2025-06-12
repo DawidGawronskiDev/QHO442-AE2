@@ -1,7 +1,7 @@
 from utils.TUI import TUI
 from queries import *
 
-class Select:
+class SelectManager:
     @staticmethod
     def select_category(db):
         """Displays the available product categories and allows the user to select one."""
