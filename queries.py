@@ -99,6 +99,26 @@ GET_BASKET_CONTENTS_FOR_CHECKOUT_QUERY = """
 
 # Orders
 
+GET_ORDER_HISTORY_QUERY = """
+    SELECT
+        so.order_id,
+        DATE(so.order_date) AS order_date,
+        p.product_description,
+        s.seller_name,
+        op.price,
+        op.quantity,
+        op.ordered_product_status
+    FROM shopper_orders so
+    JOIN ordered_products op
+        ON op.order_id = so.order_id
+    JOIN products p
+        ON p.product_id = op.product_id
+    JOIN sellers s
+        ON s.seller_id = op.seller_id
+    WHERE shopper_id = ?
+    ORDER BY so.order_date DESC;
+"""
+
 INSERT_ORDER_QUERY = """
     INSERT INTO shopper_orders (shopper_id, order_date, order_status)
     VALUES (?, datetime('now'), 'Placed');
