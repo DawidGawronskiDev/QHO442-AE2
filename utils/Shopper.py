@@ -26,7 +26,7 @@ class Shopper:
         query = """
             SELECT
                 so.order_id,
-                so.order_date,
+                DATE(so.order_date) AS order_date,
                 p.product_description,
                 s.seller_name,
                 op.price,
