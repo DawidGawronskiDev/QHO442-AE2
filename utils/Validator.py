@@ -1,8 +1,10 @@
 from utils.TUI import TUI
 
 class Validator:
+    """A class for validating user input in the terminal user interface."""
     @staticmethod
     def validate_numeric_input(prompt, error_message="Invalid input. Please enter a numeric value.", min_value=None, max_value=None):
+        """Validates that the input is a numeric value."""
         while True:
             try:
                 value = int(input(prompt).strip())
@@ -15,6 +17,7 @@ class Validator:
 
     @staticmethod
     def validate_confirmation(prompt, error_message="Invalid input. Please enter Y or N."):
+        """Validates that the input is a confirmation (Y/N)."""
         while True:
             confirmation = input(prompt).strip().upper()
             if confirmation in ("Y", "N"):
