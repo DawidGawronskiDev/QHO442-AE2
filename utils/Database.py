@@ -38,7 +38,7 @@ class Database:
             script = file.read()
             statements = script.split(";")
             for statement in statements:
-                if (statement):
+                if statement:
                     statement.strip()
                     self.exe(statement + ";")
 
