@@ -58,7 +58,7 @@ class Controller:
 
         while True:
             for option in options.items():
-                print(f"{option[0]}: {option[1]}")
+                print(f"{option[0]}. {option[1]}")
             choice = int(input("Choose an option: ").strip())
 
             if choice in options.keys():
