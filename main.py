@@ -1,10 +1,10 @@
-from db import Database
-from tui import TUI
-from shopper import Shopper
-from basket import Basket
-from table import Table
+from utils.Database import Database
+from utils.Validator import Validator
+from utils.Shopper import Shopper
+from utils.TUI import TUI
+from utils.Basket import Basket
+
 from queries import *
-from validator import Validator
 
 
 class Controller:
@@ -315,4 +315,4 @@ class Controller:
             TUI.print_error(f"An error occurred during checkout: {e}\n")
 
 if __name__ == "__main__":
-    Controller("./db/parana.db")
+    Controller("db/parana.db")

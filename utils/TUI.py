@@ -1,6 +1,4 @@
-from typing import Tuple
-
-from color import Color
+from utils.Color import Color
 
 class TUI:
     def __init__(self):

@@ -1,7 +1,7 @@
-from db import Database
-from basket import Basket
-from tui import TUI
-from table import Table
+from utils.Database import Database
+from utils.Basket import Basket
+from utils.TUI import TUI
+from utils.Table import Table
 
 class Shopper:
     def __init__(self, shopper_id, shopper_account_ref, shopper_first_name, shopper_surname,

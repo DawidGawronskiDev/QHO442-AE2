@@ -1,5 +1,5 @@
-from tui import TUI
-from table import Table
+from utils.TUI import TUI
+from utils.Table import Table
 from queries import GET_BASKET_QUERY, GET_BASKET_CONTENTS_QUERY, CREATE_BASKET_QUERY, GET_LAST_INSERT_ID_QUERY
 
 

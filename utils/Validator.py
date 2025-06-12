@@ -1,4 +1,4 @@
-from tui import TUI
+from utils.TUI import TUI
 
 class Validator:
     @staticmethod
