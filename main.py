@@ -37,32 +37,20 @@ class Controller:
 
     def sub(self):
         options = {
-            1: "Display your order history",
-            2: "Add an item to your basket",
-            3: "View your basket",
-            4: "Change the quantity of an item in your basket",
-            5: "Remove an item from your basket",
-            6: "Checkout",
-            7: "Exit"
-        }
-
-        actions = {
-            1: self.sub_1,
-            2: self.sub_2,
-            3: self.sub_3,
-            4: self.sub_4,
-            5: self.sub_5,
-            6: self.sub_6,
-            7: exit
+            1: ("Display your order history", self.sub_1),
+            2: ("Add an item to your basket", self.sub_2),
+            3: ("View your basket", self.sub_3),
+            4: ("Change the quantity of an item in your basket", self.sub_4),
+            5: ("Remove an item from your basket", self.sub_5),
+            6: ("Checkout", self.sub_6),
+            7: ("Exit", exit)
         }
 
         while True:
-            for option in options.items():
-                print(f"{option[0]}. {option[1]}")
-            choice = int(input("Choose an option: ").strip())
-
-            if choice in options.keys():
-                actions[choice]()
+            for key, (desc, _) in options.items():
+                print(f"{key}: {desc}")
+            choice = Validator.validate_numeric_input("Choose an option: ", "Invalid choice.", min_value=1, max_value=7)
+            options[choice][1]()
 
     def sub_1(self):
         self.shopper.display_your_order_history(self.db)
