@@ -1,11 +1,11 @@
 from utils.Color import Color
 
 class TUI:
-    def __init__(self):
-        pass
-
+    """A class for handling terminal user interface operations, including displaying options, validating input,
+     and printing messages in various formats."""
     @staticmethod
-    def display_options(all_options, title, type):
+    def display_options(all_options, title, t):
+        """Displays a list of options to the user and allows them to select one."""
         option_num = 1
         option_list = []
         print("\n", title, "\n")
@@ -17,46 +17,21 @@ class TUI:
             option_list.append(code)
         selected_option = 0
         while selected_option > len(option_list) or selected_option == 0:
-            prompt = "Enter the number against the " + type + " you want to choose: "
+            prompt = "Enter the number against the " + t + " you want to choose: "
             selected_option = int(input(prompt))
         return option_list[selected_option - 1]
 
     @staticmethod
-    def validate_input(msg):
-        prefix = ""
-        i = ""
-
-        while len(i) == 0:
-            i = str(input(f"{prefix + " " if len(prefix) > 0 else ""}{msg}")).strip()
-            if len(i) == 0:
-                prefix = f"{Color.error("Missing value.")}"
-            else:
-                prefix = ""
-        return i
-
-    @staticmethod
     def print_success(s):
+        """Prints a success message in green."""
         print(Color.success(s))
 
     @staticmethod
     def print_error(s):
+        """Prints an error message in red."""
         print(Color.error(s), end="")
 
     @staticmethod
-    def print_list(l):
-        for i in l:
-            print(f'- {i}')
-
-    @staticmethod
     def print_header(s):
+        """Prints a header with the given string, underlined by dashes."""
         print(f'\n{s}\n{"-" * len(s)}\n')
-
-    @staticmethod
-    def print_table(lens, header, rows):
-        for i, val in enumerate(header):
-            print(str(val).strip()[:lens[i]].ljust(lens[i], " "), end="")
-        print("\n")
-        for row in rows:
-            for i, val in enumerate(row):
-                print(str(val).strip()[:lens[i]].ljust(lens[i], " "), end="")
-            print("\n")
