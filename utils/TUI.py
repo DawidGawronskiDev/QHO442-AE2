@@ -6,6 +6,7 @@ class TUI:
     @staticmethod
     def display_options(all_options, title, t):
         """Displays a list of options to the user and allows them to select one."""
+        from utils.Validator import Validator
         option_num = 1
         option_list = []
         print("\n", title, "\n")
@@ -18,7 +19,10 @@ class TUI:
         selected_option = 0
         while selected_option > len(option_list) or selected_option == 0:
             prompt = "Enter the number against the " + t + " you want to choose: "
-            selected_option = int(input(prompt))
+            selected_option = Validator.validate_numeric_input(
+                prompt, "Invalid input. Please enter a valid option number.",
+                min_value=1, max_value=len(option_list)
+            )
         return option_list[selected_option - 1]
 
     @staticmethod

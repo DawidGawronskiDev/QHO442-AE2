@@ -93,6 +93,43 @@ class Basket:
             return 1
 
     @staticmethod
+    def get_quantity():
+        """Prompts the user to enter a quantity for the product."""
+        while True:
+            try:
+                quantity = int(input("Enter the quantity: ").strip())
+                if quantity > 0:
+                    return quantity
+                TUI.print_error("The quantity must be greater than 0.\n")
+            except ValueError:
+                TUI.print_error("Invalid input. Please enter a numeric value.\n")
+
+    @staticmethod
+    def get_new_quantity():
+        """Prompts the user to enter a new quantity for an item in the basket."""
+        while True:
+            try:
+                new_quantity = int(input("Enter the new quantity of the selected product you want to buy: ").strip())
+                if new_quantity > 0:
+                    return new_quantity
+                else:
+                    TUI.print_error("The quantity must be greater than zero.\n")
+            except ValueError:
+                TUI.print_error("The quantity must be greater than 0.\n")
+
+    @staticmethod
+    def update_item_quantity(db, basket_id, product_id, new_quantity):
+        """Updates the quantity of an item in the basket."""
+        db.exe(UPDATE_QUANTITY_QUERY, (new_quantity, basket_id, product_id))
+        db.commit()
+
+    @staticmethod
+    def remove_item_from_basket(db, basket_id, product_id):
+        """Removes an item from the basket."""
+        db.exe(DELETE_ITEM_QUERY, (basket_id, product_id))
+        db.commit()
+
+    @staticmethod
     def create_basket(db, shopper_id):
         """ Creates a new basket for the given shopper ID."""
         db.exe(CREATE_BASKET_QUERY, (shopper_id,))

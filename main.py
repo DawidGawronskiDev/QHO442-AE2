@@ -3,7 +3,9 @@ from utils.Validator import Validator
 from utils.Shopper import Shopper
 from utils.TUI import TUI
 from utils.Basket import Basket
-
+from utils.Select import Select
+from utils.CheckoutManager import CheckoutManager
+from utils.Menu import MenuManager
 from queries import *
 
 
@@ -36,25 +38,7 @@ class Controller:
         self.basket = Basket(self.shopper.shopper_id, self.db)
         TUI.print_success(self.shopper.welcome())
 
-        self.sub()
-
-    def sub(self):
-        """Displays the main menu and handles user input."""
-        options = {
-            1: ("Display your order history", self.sub_1),
-            2: ("Add an item to your basket", self.sub_2),
-            3: ("View your basket", self.sub_3),
-            4: ("Change the quantity of an item in your basket", self.sub_4),
-            5: ("Remove an item from your basket", self.sub_5),
-            6: ("Checkout", self.sub_6),
-            7: ("Exit", exit)
-        }
-
-        while True:
-            for key, (desc, _) in options.items():
-                print(f"{key}. {desc}")
-            choice = Validator.validate_numeric_input("Choose an option: ", "Invalid choice.", min_value=1, max_value=7)
-            options[choice][1]()
+        MenuManager(self).display_menu()
 
     def sub_1(self):
         """Displays the order history for the shopper."""
@@ -62,19 +46,19 @@ class Controller:
 
     def sub_2(self):
         """Adds an item to the shopper's basket."""
-        category_id = self.select_category()
+        category_id = Select.select_category(self.db)
         if not category_id:
             return
 
-        product_id = self.select_product(category_id)
+        product_id = Select.select_product(self.db, category_id)
         if not product_id:
             return
 
-        seller_id, price = self.select_seller(product_id)
+        seller_id, price = Select.select_seller(self.db, product_id)
         if not seller_id:
             return
 
-        quantity = self.get_quantity()
+        quantity = Basket.get_quantity()
         if not quantity:
             return
 
@@ -106,11 +90,16 @@ class Controller:
         selected_item = basket_contents[item_no - 1]
         product_id = selected_item[0]
 
-        new_quantity = self.get_new_quantity()
+        new_quantity = Basket.get_new_quantity()
         if new_quantity is None:
             return
 
-        self.update_item_quantity(Basket.get_basket(self.db, self.shopper.shopper_id)[0], product_id, new_quantity)
+        Basket.update_item_quantity(
+            self.db,
+            Basket.get_basket(self.db, self.shopper.shopper_id)[0],
+            product_id,
+            new_quantity
+        )
         TUI.print_success("Quantity updated successfully.\n")
 
         self.sub_3()
@@ -137,7 +126,11 @@ class Controller:
             TUI.print_success("Item removal canceled.\n")
             return
 
-        self.remove_item_from_basket(Basket.get_basket(self.db, self.shopper.shopper_id)[0], product_id)
+        Basket.remove_item_from_basket(
+            self.db,
+            Basket.get_basket(self.db, self.shopper.shopper_id)[0],
+            product_id
+        )
         TUI.print_success("Item removed successfully.\n")
 
         basket_contents = Basket.get_basket_contents(self.db, Basket.get_basket(self.db, self.shopper.shopper_id)[0])
@@ -162,103 +155,13 @@ class Controller:
             TUI.print_success("Checkout canceled.\n")
             return
 
-        self.process_checkout(Basket.get_basket(self.db, self.shopper.shopper_id)[0], basket_contents)
-
-    """
-        Important!
-        Following methods should go into separate classes.
-    """
-
-    def select_category(self):
-        """Displays the available product categories and allows the user to select one."""
-        categories = self.db.fetch_many(GET_CATEGORIES_QUERY)
-        if not categories:
-            TUI.print_error("No product categories available.\n")
-            return None
-        return TUI.display_options(categories, "Product Categories", "category")
-
-    def select_product(self, category_id):
-        """Displays the products in the selected category and allows the user to select one."""
-        products = self.db.fetch_many(GET_PRODUCTS_QUERY, (category_id,))
-        if not products:
-            TUI.print_error("No products available in this category.\n")
-            return None
-        return TUI.display_options(products, "Products", "product")
-
-    def select_seller(self, product_id):
-        """Displays the sellers for the selected product and allows the user to select one."""
-        sellers = self.db.fetch_many(GET_SELLERS_QUERY, (product_id,))
-        if not sellers:
-            TUI.print_error("No sellers available for this product.\n")
-            return None, None
-        seller_id = TUI.display_options(
-            [(seller[0], f"{seller[1]} - ${seller[2]:.2f}") for seller in sellers],
-            "Sellers",
-            "seller"
+        CheckoutManager.process_checkout(
+            self.db,
+            self.shopper.shopper_id,
+            Basket.get_basket(self.db, self.shopper.shopper_id)[0],
+            basket_contents
         )
-        price = next(seller[2] for seller in sellers if seller[0] == seller_id)
-        return seller_id, price
 
-    def get_quantity(self):
-        """Prompts the user to enter a quantity for the product."""
-        while True:
-            try:
-                quantity = int(input("Enter the quantity: ").strip())
-                if quantity > 0:
-                    return quantity
-                TUI.print_error("The quantity must be greater than 0.\n")
-            except ValueError:
-                TUI.print_error("Invalid input. Please enter a numeric value.\n")
-
-    def get_new_quantity(self):
-        """Prompts the user to enter a new quantity for an item in the basket."""
-        while True:
-            try:
-                new_quantity = int(input("Enter the new quantity of the selected product you want to buy: ").strip())
-                if new_quantity > 0:
-                    return new_quantity
-                else:
-                    TUI.print_error("The quantity must be greater than zero.\n")
-            except ValueError:
-                TUI.print_error("The quantity must be greater than 0.\n")
-
-    def update_item_quantity(self, basket_id, product_id, new_quantity):
-        """Updates the quantity of an item in the basket."""
-        self.db.exe(UPDATE_QUANTITY_QUERY, (new_quantity, basket_id, product_id))
-        self.db.commit()
-
-    def remove_item_from_basket(self, basket_id, product_id):
-        """Removes an item from the basket."""
-        self.db.exe(DELETE_ITEM_QUERY, (basket_id, product_id))
-        self.db.commit()
-
-    def process_checkout(self, basket_id, basket_contents):
-        """Processes the checkout for the shopper's basket."""
-        try:
-            self.db.begin_transaction()
-
-            # Insert into shopper_orders
-            self.db.exe(INSERT_ORDER_QUERY, (self.shopper.shopper_id,))
-            order_id = self.db.fetch_one(GET_LAST_INSERT_ID_QUERY)[0]
-
-            # Insert into ordered_products
-            for item in basket_contents:
-                product_id, _, _, quantity, price = item
-                seller_id = self.db.fetch_one(
-                    GET_SELLER_ID_FROM_BASKET_QUERY,
-                    (basket_id, product_id)
-                )[0]
-                self.db.exe(INSERT_ORDERED_PRODUCT_QUERY, (order_id, product_id, seller_id, quantity, price))
-
-            # Clear the basket
-            self.db.exe(DELETE_BASKET_CONTENTS_QUERY, (basket_id,))
-            self.db.exe(DELETE_SHOPPER_BASKET_QUERY, (basket_id,))
-
-            self.db.commit()
-            TUI.print_success("Checkout complete, your order has been placed.\n")
-        except Exception as e:
-            self.db.rollback()
-            TUI.print_error(f"An error occurred during checkout: {e}\n")
 
 if __name__ == "__main__":
     Controller("db/parana.db")
